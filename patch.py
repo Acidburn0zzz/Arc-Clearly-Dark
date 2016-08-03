@@ -93,9 +93,7 @@ class Block:
                 self.body[-1] = self.body[-1].rstrip('\n') + ' }\n'
 
         f.writelines(
-            ['/* Arc-Clearly-Dark Customization Begin */\n'] +
-            self.inject_before + [self.lead] + self.body + self.inject_after +
-            ['/* Arc-Clearly-Dark Customization End */\n']
+            self.inject_before + [self.lead] + self.body + self.inject_after
         )
 
     def __str__(self):
@@ -256,6 +254,12 @@ def transform_output(tok, out_f):
 
             if match:
                 func(block)
+                block.inject_before.insert(
+                    0, '/* Arc-Clearly-Dark Customization Begin */'
+                )
+                block.inject_after.append(
+                    '/* Arc-Clearly-Dark Customization End */'
+                )
                 break  # proceed to next block
 
         block.output(out_f)
@@ -277,8 +281,18 @@ def main():
 
     transform_output(tok, mod_css_file)
 
-    os.rename(css_path, css_path + '.before_mod_clearly')
-    os.rename(css_path + '.mod_clearly', css_path)
+    base_bak_name = css_path + '.before_mod_clearly'
+    if os.path.isfile(base_bak_name):
+        for alt_name in (base_bak_name + '.' + str(i) for i in range(1, 100)):
+            if not os.path.isfile(alt_name):
+                os.rename(css_path, alt_name)
+                os.rename(css_path + '.mod_clearly', css_path)
+        else:
+            print('A hundred different backup .before_mod_clearly files found.'
+                  'Giving up on patching as creating more is ridiculous.')
+    else:
+        os.rename(css_path, base_bak_name)
+        os.rename(css_path + '.mod_clearly', css_path)
 
 
 if __name__ == '__main__':
