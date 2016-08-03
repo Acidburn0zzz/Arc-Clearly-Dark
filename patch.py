@@ -246,8 +246,8 @@ def transform_output(tok, out_f):
         ('.show-apps', True): show_apps_norm,
         ('.show-apps:hover', True): show_apps_hover,
         ('.show-apps:active', True): show_apps_active,
-        ('.workspace-thumbnails', False): workspace_thumbs,
-        ('.workspace-thumbnails:rtl', False): workspace_thumbs,
+        ('.workspace-thumbnails', True): workspace_thumbs,
+        ('.workspace-thumbnails:rtl', True): workspace_thumbs,
         ('.workspace-thumbnail-indicator', False): workspace_indic,
     }
 
