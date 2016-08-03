@@ -88,7 +88,7 @@ class Block:
         self.body = [r.formatted() for r in rules]
 
     def output(self, f):
-        if len(self.body) > 0:
+        if len(self.body) > 0 and self.of_value:
             if not self.body[-1].rstrip().endswith('}'):
                 self.body[-1] = self.body[-1].rstrip('\n') + ' }\n'
 
@@ -255,10 +255,10 @@ def transform_output(tok, out_f):
             if match:
                 func(block)
                 block.inject_before.insert(
-                    0, '/* Arc-Clearly-Dark Customization Begin */'
+                    0, '/* Arc-Clearly-Dark Customization Begin */\n'
                 )
                 block.inject_after.append(
-                    '/* Arc-Clearly-Dark Customization End */'
+                    '/* Arc-Clearly-Dark Customization End */\n'
                 )
                 break  # proceed to next block
 
