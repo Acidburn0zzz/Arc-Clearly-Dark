@@ -35,11 +35,24 @@ class Block:
             self.lead = hold[0]
             self.body = []
 
+    def clear_given(self):
+        self.lead = ''
+        self.body = []
+
     def output(self, f):
-        finalized = self.inject_before + [self.lead] \
-                    + self.body + self.inject_after
+        # finalized = ['/* Arc-Clearly-Dark Customization Begin */\n'] + \
+                    # self.inject_before + [self.lead] + \
+                    # self.body + self.inject_after + \
+                    # ['/* Arc-Clearly-Dark Customization End */\n']
+        finalized = self.inject_before + [self.lead] + \
+                    self.body + self.inject_after
         f.writelines(finalized)
-        # f.writelines(map(lambda l: l + '\n', finalized))
+
+    def __str__(self):
+        return '-------Block-------' + \
+               '\nlead: ' + self.lead + \
+               '\nbody (len): ' + str(len(self.body)) + '\n' + \
+               ''.join(self.body)
 
 
 def tokenizer(css_file):
@@ -52,6 +65,7 @@ def tokenizer(css_file):
         if line.strip().startswith('/*'):
             in_comment = True
         elif line.strip().endswith('{'):
+            hold = [''.join(hold)]
             in_block = True
 
         if in_comment:
@@ -71,13 +85,21 @@ def tokenizer(css_file):
 
 def transform_output(tok, out_f):
     def system_icon(m, b):
-        pass
+        # looking for -- padding: 0 4px;
+        r = re.compile(r'(padding:\s+\d+\w*)\s*\d+\w*;')
+        for i, l in enumerate(b.body):
+            b.body[i] = r.sub(r'\1 8px;', l)
 
-    def search_entry_addition(m, b):
-        pass
+    def search_entry_deletion(m, b):
+        b.clear_given()
 
     def dash_color(m, b):
-        pass
+        print('DASH COLOR')
+        r1 = re.compile(r'(background-color:)\s*;')
+        r2 = re.compile(r'(border-color:)\s*;')
+        for i, l in enumerate(b.body):
+            x = r1.sub(r'\1 transparent;', l)
+            b.body[i] = r2.sub(r'\1 transparent;', x)
 
     def dash_appwell_addition(m, b):
         pass
@@ -101,10 +123,16 @@ def transform_output(tok, out_f):
         pass
 
     lead_map = {re.compile(k): v for k, v in {
-        r'\s+#panel \.panel-button \.system-status-icon\s+{': system_icon
+        r'\s*#panel \.panel-button \.system-status-icon\s*{':
+            system_icon,
+        r'\s*\.search-entry:hover.*\.search-entry:focus.*{':
+            search_entry_deletion,
+        r'#dash {':
+            dash_color
     }.items()}
 
     for block in tok:
+        # print(block.lead)
         for pat, func in lead_map.items():
             match = pat.match(block.lead)
             if match:
@@ -122,13 +150,18 @@ def main():
         sys.exit(2)
 
     css_file = open(css_path)
-    # mod_css_path = css_path + '.mod_clearly.new.css'
-    # mod_css_file = open(mod_css_path, 'w')
+    mod_css_path = css_path + '.mod_clearly.new.css'
+    mod_css_file = open(mod_css_path, 'w')
 
     tok = tokenizer(css_file)
 
+    for block in tok:
+        if block.lead is None or len(block.lead.strip()) == 0:
+            print(block)
+        block.output(mod_css_file)
+
     # transform_output(tok, mod_css_file)
-    transform_output(tok, sys.stdout)
+    # transform_output(tok, sys.stdout)
 
 
 if __name__ == '__main__':
