@@ -2,17 +2,17 @@
 
 import os
 import sys
-import shutil
+# import shutil
 import re
 
 
-DIR=os.path.dirname(os.path.realpath(__file__))
+DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_css_path():
     os.chdir(DIR)
     for root, dirs, files in os.walk('.'):
-        if root.endswith('gnome-shell') and files.contains('gnome-shell.css'):
+        if root.endswith('gnome-shell') and 'gnome-shell.css' in files:
             css_path = os.path.join(root, 'gnome-shell.css')
             return css_path
 
@@ -21,10 +21,10 @@ def get_css_path():
 
 class Block:
     of_value = False
-    inject_before = None
+    inject_before = []
     lead = None
     body = None
-    inject_after = None
+    inject_after = []
 
     def __init__(self, hold, of_value):
         self.of_value = of_value
@@ -38,8 +38,8 @@ class Block:
     def output(self, f):
         finalized = self.inject_before + [self.lead] \
                     + self.body + self.inject_after
-        for line in finalized:
-            f.writelines(map(lambda l: l + '\n', finalized))
+        f.writelines(finalized)
+        # f.writelines(map(lambda l: l + '\n', finalized))
 
 
 def tokenizer(css_file):
@@ -70,31 +70,65 @@ def tokenizer(css_file):
 
 
 def transform_output(tok, out_f):
-    lead_map = {re.compile(x) for x in {
-        
-    }}
+    def system_icon(m, b):
+        pass
+
+    def search_entry_addition(m, b):
+        pass
+
+    def dash_color(m, b):
+        pass
+
+    def dash_appwell_addition(m, b):
+        pass
+
+    def show_apps_norm(m, b):
+        pass
+
+    def show_apps_hover(m, b):
+        pass
+
+    def show_apps_active(m, b):
+        pass
+
+    def workspace_thumbs(m, b):
+        pass
+
+    def workspace_thumbs_rtl(m, b):
+        pass
+
+    def workspace_indic(m, b):
+        pass
+
+    lead_map = {re.compile(k): v for k, v in {
+        r'\s+#panel \.panel-button \.system-status-icon\s+{': system_icon
+    }.items()}
 
     for block in tok:
-        
-        pass
+        for pat, func in lead_map.items():
+            match = pat.match(block.lead)
+            if match:
+                func(match, block)
+                block.output(out_f)
+                continue  # proceed to next block
 
 
 def main():
     css_path = get_css_path()
 
-    if css_file is None:
+    if css_path is None:
         print('Did not find gnome-shell.css. Please be sure you placed '
               'this script in the Arc-Dark theme directory')
         sys.exit(2)
 
-
     css_file = open(css_path)
-    mod_css_path = css_path + '.mod_clearly.new.css'
-    mod_css_file = open(mod_css_path, 'w')
+    # mod_css_path = css_path + '.mod_clearly.new.css'
+    # mod_css_file = open(mod_css_path, 'w')
 
     tok = tokenizer(css_file)
 
-    transform_output(tok, mod_css_file)
+    # transform_output(tok, mod_css_file)
+    transform_output(tok, sys.stdout)
 
 
 if __name__ == '__main__':
