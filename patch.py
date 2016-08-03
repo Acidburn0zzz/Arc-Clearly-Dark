@@ -1,8 +1,22 @@
 #!/usr/bin/python3
 
+# Copyright 2016 icasdri
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import sys
-# import shutil
 import re
 
 
@@ -78,13 +92,10 @@ class Block:
             if not self.body[-1].rstrip().endswith('}'):
                 self.body[-1] = self.body[-1].rstrip('\n') + ' }\n'
 
-        # finalized = ['/* Arc-Clearly-Dark Customization Begin */\n'] + \
-        #             self.inject_before + [self.lead] + \
-        #             self.body + self.inject_after + \
-        #             ['/* Arc-Clearly-Dark Customization End */\n']
-
         f.writelines(
-            self.inject_before + [self.lead] + self.body + self.inject_after
+            ['/* Arc-Clearly-Dark Customization Begin */\n'] +
+            self.inject_before + [self.lead] + self.body + self.inject_after +
+            ['/* Arc-Clearly-Dark Customization End */\n']
         )
 
     def __str__(self):
@@ -132,9 +143,7 @@ class Rule:
 
 def transform_output(tok, out_f):
     def deletion(b):
-        print(b)
         b.clear_given()
-        print('ABOVE BLOCK DELETED')
 
     def system_icon(b):
         rules = b.get_rules()
@@ -247,8 +256,9 @@ def transform_output(tok, out_f):
 
             if match:
                 func(block)
-                block.output(out_f)
                 break  # proceed to next block
+
+        block.output(out_f)
 
 
 def main():
@@ -260,17 +270,15 @@ def main():
         sys.exit(2)
 
     css_file = open(css_path)
-    # mod_css_path = css_path + '.mod_clearly.new.css'
-    # mod_css_file = open(mod_css_path, 'w')
+    mod_css_path = css_path + '.mod_clearly'
+    mod_css_file = open(mod_css_path, 'w')
 
     tok = tokenizer(css_file)
 
-    # for block in tok:
-        # print(block)
-        # # block.output(mod_css_file)
+    transform_output(tok, mod_css_file)
 
-    # transform_output(tok, mod_css_file)
-    transform_output(tok, sys.stdout)
+    os.rename(css_path, css_path + '.before_mod_clearly')
+    os.rename(css_path + '.mod_clearly', css_path)
 
 
 if __name__ == '__main__':
