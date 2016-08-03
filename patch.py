@@ -62,13 +62,15 @@ def tokenizer(css_file):
 
 
 class Block:
-    of_value = False
-    inject_before = []
+    of_value = None
+    inject_before = None
     lead = None
     body = None
-    inject_after = []
+    inject_after = None
 
     def __init__(self, hold, of_value):
+        self.inject_before = []
+        self.inject_after = []
         self.of_value = of_value
         if len(hold) > 1:
             self.lead = hold[0]
@@ -80,12 +82,21 @@ class Block:
     def clear_given(self):
         self.lead = ''
         self.body = []
+        self.inject_after.append(
+            '/* Arc-Clearly-Dark Customization Removed Block */\n'
+        )
 
     def get_rules(self):
         return [Rule.parse(x) for x in self.body]
 
     def update_rules(self, rules):
         self.body = [r.formatted() for r in rules]
+        self.inject_before.insert(
+            0, '/* Arc-Clearly-Dark Customization Begin */\n'
+        )
+        self.inject_after.append(
+            '/* Arc-Clearly-Dark Customization End */\n'
+        )
 
     def output(self, f):
         if len(self.body) > 0 and self.of_value:
@@ -254,12 +265,6 @@ def transform_output(tok, out_f):
 
             if match:
                 func(block)
-                block.inject_before.insert(
-                    0, '/* Arc-Clearly-Dark Customization Begin */\n'
-                )
-                block.inject_after.append(
-                    '/* Arc-Clearly-Dark Customization End */\n'
-                )
                 break  # proceed to next block
 
         block.output(out_f)
@@ -286,13 +291,14 @@ def main():
         for alt_name in (base_bak_name + '.' + str(i) for i in range(1, 100)):
             if not os.path.isfile(alt_name):
                 os.rename(css_path, alt_name)
-                os.rename(css_path + '.mod_clearly', css_path)
+                os.rename(mod_css_path, css_path)
+                break
         else:
             print('A hundred different backup .before_mod_clearly files found.'
                   'Giving up on patching as creating more is ridiculous.')
     else:
         os.rename(css_path, base_bak_name)
-        os.rename(css_path + '.mod_clearly', css_path)
+        os.rename(mod_css_path, css_path)
 
 
 if __name__ == '__main__':
