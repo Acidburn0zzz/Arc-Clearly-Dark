@@ -215,12 +215,12 @@ def transform_output(tok, out_f):
         r1 = x.clone()
         r1.name = 'background-color'
         r1.value = 'transparent'
-        rules.append(r1)
+        rules.insert(0, r1)
 
         r2 = x.clone()
         r2.name = 'border-color'
         r2.value = 'transparent'
-        rules.append(r2)
+        rules.insert(0, r2)
 
         b.update_rules(rules)
 
