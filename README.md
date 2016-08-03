@@ -8,6 +8,8 @@
 
 ## Installation
 
+For Arch Linux users, this theme can be installed from the AUR: [gnome-shell-theme-arc-clearly-dark-git](https://aur.archlinux.org/packages/gnome-shell-theme-arc-clearly-dark-git/).
+
 **Arc Clearly Dark** is distributed as a python patch script for the vanilla *Arc Dark* theme. Installation can generaly be done as follows:
 
 1. Build the vanilla *Arc Dark* theme from the upstream [Arc](https://github.com/horst3180/Arc-theme) repo.
