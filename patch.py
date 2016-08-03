@@ -199,7 +199,13 @@ def transform_output(tok, out_f):
         b.update_rules(rules)
 
         x = b.lead.split('\n')
-        b.lead = '\n'.join(filter(lambda y: '.show-apps-icon' not in y, x))
+        z = '\n'.join(filter(lambda y: '.show-apps-icon' not in y, x)).rstrip()
+        if z.endswith(','):
+            z = z[:-1]
+        if not z.endswith('{'):
+            z = z + '{'
+
+        b.lead = z + '\n'
 
     def workspace_thumbs(b):
         exc = ('border-image',)
