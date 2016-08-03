@@ -40,13 +40,18 @@ class Block:
         self.body = []
 
     def output(self, f):
+        if len(self.body) > 0:
+            if not self.body[-1].rstrip().endswith('}'):
+                self.body[-1] = self.body[-1].rstrip('\n') + ' }\n'
+
         # finalized = ['/* Arc-Clearly-Dark Customization Begin */\n'] + \
-                    # self.inject_before + [self.lead] + \
-                    # self.body + self.inject_after + \
-                    # ['/* Arc-Clearly-Dark Customization End */\n']
-        finalized = self.inject_before + [self.lead] + \
-                    self.body + self.inject_after
-        f.writelines(finalized)
+        #             self.inject_before + [self.lead] + \
+        #             self.body + self.inject_after + \
+        #             ['/* Arc-Clearly-Dark Customization End */\n']
+
+        f.writelines(
+            self.inject_before + [self.lead] + self.body + self.inject_after
+        )
 
     def __str__(self):
         return '-------Block-------' + \
@@ -83,35 +88,84 @@ def tokenizer(css_file):
             continue
 
 
-def transform_output(tok, out_f):
-    def system_icon(m, b):
-        # looking for -- padding: 0 4px;
-        r = re.compile(r'(padding:\s+\d+\w*)\s*\d+\w*;')
-        for i, l in enumerate(b.body):
-            b.body[i] = r.sub(r'\1 8px;', l)
+RULE_RE = re.compile(r'(?P<pre>\s*)(?P<name>[\w-]+):\s*'
+                     '(?P<value>.*)\s*;(?P<post>.*}?\s*)')
 
-    def search_entry_deletion(m, b):
+
+class RuleParseError(Exception):
+    def __init__(self, rule):
+        self.message = rule
+
+
+class Rule:
+    def __init__(self, rule_line):
+        m = RULE_RE.match(rule_line)
+        if m:
+            self.pre = m.group('pre')
+            self.name = m.group('name')
+            self.value = m.group('value')
+            self.post = m.group('post')
+        else:
+            raise RuleParseError(rule_line)
+
+    def formatted(self):
+        return self.pre + self.name + ': ' + self.value + ';' + self.post
+
+
+def transform_output(tok, out_f):
+    def deletion(m, b):
+        print(b)
         b.clear_given()
+        print('ABOVE BLOCK DELETED')
+
+    def system_icon(m, b):
+        rules = [Rule(x) for x in b.body]
+        for r in rules:
+            if r.name == 'padding':
+                val = r.value.split()
+                val[1] = '8px'
+                r.value = ' '.join(val)
+
+        b.body = [r.formatted() for r in rules]
 
     def dash_color(m, b):
-        print('DASH COLOR')
-        r1 = re.compile(r'(background-color:)\s*;')
-        r2 = re.compile(r'(border-color:)\s*;')
-        for i, l in enumerate(b.body):
-            x = r1.sub(r'\1 transparent;', l)
-            b.body[i] = r2.sub(r'\1 transparent;', x)
+        rules = [Rule(x) for x in b.body]
+        for r in rules:
+            if r.name == 'background-color' or r.name == 'border-color':
+                r.value = 'transparent'
 
-    def dash_appwell_addition(m, b):
-        pass
+        b.body = [r.formatted() for r in rules]
 
     def show_apps_norm(m, b):
-        pass
+        rules = [Rule(x) for x in b.body]
+        for r in rules:
+            if r.name == 'background-color':
+                r.value = 'transparent'
+
+        b.body = [r.formatted() for r in rules]
 
     def show_apps_hover(m, b):
-        pass
+        exc = ('color',)
+        rules = list(filter(lambda r: r.name not in exc,
+                            [Rule(x) for x in b.body]))
+        for r in rules:
+            if r.name == 'background-color':
+                r.value = 'rgba(186, 195, 207, 0.4)'
+
+        b.body = [r.formatted() for r in rules]
 
     def show_apps_active(m, b):
-        pass
+        exc = ('color', 'box-shadow', 'transition-duration')
+        rules = list(filter(lambda r: r.name not in exc,
+                            [Rule(x) for x in b.body]))
+        for r in rules:
+            if r.name == 'background-color':
+                r.value = '#5294E2'
+
+        b.body = [r.formatted() for r in rules]
+
+        x = b.lead.split('\n')
+        b.lead = '\n'.join(filter(lambda y: '.show-apps-icon' not in y, x))
 
     def workspace_thumbs(m, b):
         pass
@@ -122,13 +176,23 @@ def transform_output(tok, out_f):
     def workspace_indic(m, b):
         pass
 
-    lead_map = {re.compile(k): v for k, v in {
-        r'\s*#panel \.panel-button \.system-status-icon\s*{':
+    lead_map = {re.compile('\s*' + k): v for k, v in {
+        r'#panel \.panel-button \.system-status-icon\s*{':
             system_icon,
-        r'\s*\.search-entry:hover.*\.search-entry:focus.*{':
-            search_entry_deletion,
-        r'#dash {':
-            dash_color
+        r'\.search-entry:hover.*\.search-entry:focus.*{':
+            deletion,
+        r'#dash\s*{':
+            dash_color,
+        r'#dash .app-well-app:hover[\S\s]*{':
+            deletion,
+        r'#dash .app-well-app:active[\S\s]*{':
+            deletion,
+        r'\.show-apps.*{':
+            show_apps_norm,
+        r'\.show-apps:hover.*{':
+            show_apps_hover,
+        r'\.show-apps:active[\S\s]*{':
+            show_apps_active
     }.items()}
 
     for block in tok:
@@ -138,7 +202,11 @@ def transform_output(tok, out_f):
             if match:
                 func(match, block)
                 block.output(out_f)
-                continue  # proceed to next block
+                break  # proceed to next block
+
+        if match:
+            if func is not deletion:
+                del lead_map[pat]
 
 
 def main():
@@ -150,18 +218,17 @@ def main():
         sys.exit(2)
 
     css_file = open(css_path)
-    mod_css_path = css_path + '.mod_clearly.new.css'
-    mod_css_file = open(mod_css_path, 'w')
+    # mod_css_path = css_path + '.mod_clearly.new.css'
+    # mod_css_file = open(mod_css_path, 'w')
 
     tok = tokenizer(css_file)
 
-    for block in tok:
-        if block.lead is None or len(block.lead.strip()) == 0:
-            print(block)
-        block.output(mod_css_file)
+    # for block in tok:
+        # print(block)
+        # # block.output(mod_css_file)
 
     # transform_output(tok, mod_css_file)
-    # transform_output(tok, sys.stdout)
+    transform_output(tok, sys.stdout)
 
 
 if __name__ == '__main__':
